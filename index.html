@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Landing Page Builder</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#050303;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;display:flex;justify-content:center;padding:20px;}
+  .box{width:100%;max-width:380px;background:#0d0808;border:1px solid rgba(255,31,61,.3);border-radius:16px;padding:20px;margin:auto;}
+  h1{font-size:1.2rem;color:#ff3b52;margin-bottom:14px;text-align:center;}
+  label{display:block;font-size:.8rem;color:#c9b9b9;margin:10px 0 4px;}
+  input[type=text],input[type=email],input[type=password]{width:100%;padding:10px;border-radius:8px;border:1px solid #3a1a1a;background:#160c0c;color:#fff;font-size:.95rem;}
+  button{width:100%;margin-top:14px;padding:11px;border:0;border-radius:10px;background:linear-gradient(135deg,#ff2d47,#c2091f);color:#fff;font-weight:700;font-size:.95rem;cursor:pointer;}
+  button.alt{background:transparent;border:1px solid rgba(255,31,61,.5);}
+  button:disabled{opacity:.6;}
+  .msg{margin-top:10px;font-size:.82rem;text-align:center;min-height:1em;}
+  .err{color:#ff6b6b;} .ok{color:#6bff95;}
+  .link{text-align:center;margin-top:12px;font-size:.82rem;color:#c9b9b9;}
+  .link a{color:#ff3b52;cursor:pointer;text-decoration:underline;}
+  .hide{display:none;}
+  .avatar{width:90px;height:90px;border-radius:50%;object-fit:cover;border:2px solid #ff1f3d;display:block;margin:0 auto 6px;background:#1a1010;}
+  .linkbox{background:#160c0c;border:1px dashed #ff1f3d;border-radius:8px;padding:8px;font-size:.78rem;word-break:break-all;margin-top:10px;}
+  small{color:#8c7a7a;font-size:.72rem;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="box" id="loginView">
+  <h1>Login</h1>
+  <label>Email</label><input type="email" id="lEmail">
+  <label>Password</label><input type="password" id="lPass">
+  <button id="lBtn">Login</button>
+  <div class="msg err" id="lMsg"></div>
+  <div class="link">Account nahi hai? <a id="toReg">Register karein</a></div>
+</div>
+
+<!-- REGISTER -->
+<div class="box hide" id="regView">
+  <h1>Register</h1>
+  <label>Email</label><input type="email" id="rEmail">
+  <label>Password (min 6)</label><input type="password" id="rPass">
+  <button id="rBtn">Register</button>
+  <div class="msg err" id="rMsg"></div>
+  <div class="link">Pehle se account hai? <a id="toLogin">Login karein</a></div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="box hide" id="dashView">
+  <h1>Apna Page Banayein</h1>
+  <img id="preview" class="avatar" alt="">
+  <label>Photo upload</label>
+  <input type="file" id="photo" accept="image/*">
+  <label>Name</label><input type="text" id="name" maxlength="40" placeholder="Apna naam">
+  <label>Channel link</label><input type="text" id="channel" placeholder="https://t.me/yourchannel">
+  <label>Username <small>(@ ke saath ya bina dono chalega)</small></label>
+  <input type="text" id="username" placeholder="@yourusername">
+  <button id="saveBtn">Save</button>
+  <div class="msg" id="dMsg"></div>
+  <div id="linkArea" class="hide">
+    <div class="linkbox" id="pageLink"></div>
+    <button id="copyBtn" class="alt">Link Copy Karein</button>
+    <button id="openBtn" class="alt">Page Dekhein</button>
+  </div>
+  <button id="logoutBtn" class="alt">Logout</button>
+</div>
+
+<script type="module">
+import { auth, db } from "./firebase-config.js";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { doc, getDoc, setDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const $ = (id) => document.getElementById(id);
+const views = ["loginView", "regView", "dashView"];
+const show = (v) => views.forEach((x) => $(x).classList.toggle("hide", x !== v));
+
+$("toReg").onclick = () => show("regView");
+$("toLogin").onclick = () => show("loginView");
+
+function errText(e){
+  const c = e.code || "";
+  if (c.includes("invalid-email")) return "Email sahi nahi hai.";
+  if (c.includes("email-already")) return "Ye email pehle se registered hai.";
+  if (c.includes("weak-password")) return "Password kam az kam 6 character ka rakhein.";
+  if (c.includes("invalid-credential") || c.includes("wrong-password") || c.includes("user-not-found")) return "Email ya password galat hai.";
+  if (c.includes("too-many")) return "Bohat attempts, thodi der baad try karein.";
+  if (c.includes("permission")) return "Permission error. Firestore rules check karein.";
+  return "Error: " + (e.message || c);
+}
+
+$("rBtn").onclick = async () => {
+  $("rMsg").textContent = "";
+  try { await createUserWithEmailAndPassword(auth, $("rEmail").value.trim(), $("rPass").value); }
+  catch (e) { $("rMsg").textContent = errText(e); }
+};
+$("lBtn").onclick = async () => {
+  $("lMsg").textContent = "";
+  try { await signInWithEmailAndPassword(auth, $("lEmail").value.trim(), $("lPass").value); }
+  catch (e) { $("lMsg").textContent = errText(e); }
+};
+$("logoutBtn").onclick = () => signOut(auth);
+
+// ---------- helpers ----------
+const clean = (s) => s.trim();
+function normChannel(v){
+  v = clean(v);
+  if (!v) return "";
+  if (v.startsWith("@")) return "https://t.me/" + v.slice(1);
+  if (/^(t\.me|telegram\.me)\//i.test(v)) v = "https://" + v;
+  if (!/^https:\/\/(t\.me|telegram\.me)\/.+/i.test(v)) return null;
+  return v;
+}
+function normUser(v){
+  v = clean(v).replace(/^@+/, "");
+  if (!v) return "";
+  if (!/^[A-Za-z0-9_]{3,32}$/.test(v)) return null;
+  return v;
+}
+function compress(file){
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const S = 300, c = document.createElement("canvas");
+      c.width = c.height = S;
+      const m = Math.min(img.width, img.height);
+      c.getContext("2d").drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, S, S);
+      res(c.toDataURL("image/jpeg", 0.8));
+    };
+    img.onerror = () => rej(new Error("Photo load nahi hui"));
+    img.src = URL.createObjectURL(file);
+  });
+}
+const randId = () => Array.from(crypto.getRandomValues(new Uint8Array(8)))
+  .map((b) => "abcdefghijkmnpqrstuvwxyz23456789"[b % 32]).join("");
+
+let pageId = null, photoData = "";
+const pageUrl = () => new URL("p.html?id=" + pageId, location.href).href;
+
+function showLink(){
+  if (!pageId) return;
+  $("linkArea").classList.remove("hide");
+  $("pageLink").textContent = pageUrl();
+}
+
+$("photo").onchange = async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try { photoData = await compress(f); $("preview").src = photoData; }
+  catch (err) { $("dMsg").className = "msg err"; $("dMsg").textContent = err.message; }
+};
+
+$("saveBtn").onclick = async () => {
+  const msg = $("dMsg");
+  msg.className = "msg err"; msg.textContent = "";
+  const name = clean($("name").value);
+  const channel = normChannel($("channel").value);
+  const username = normUser($("username").value);
+  if (!name) return (msg.textContent = "Name likhein.");
+  if (!channel) return (msg.textContent = "Channel link sahi daalein (https://t.me/...).");
+  if (!username) return (msg.textContent = "Username sahi daalein (3-32 letters, numbers ya _).");
+  if (!photoData) return (msg.textContent = "Photo upload karein.");
+
+  $("saveBtn").disabled = true;
+  try {
+    const uid = auth.currentUser.uid;
+    if (!pageId) {
+      pageId = randId();
+      await setDoc(doc(db, "pages", pageId), { uid, name, channel, username, photo: photoData, updatedAt: serverTimestamp() });
+      await setDoc(doc(db, "users", uid), { pageId });
+    } else {
+      await setDoc(doc(db, "pages", pageId), { uid, name, channel, username, photo: photoData, updatedAt: serverTimestamp() });
+    }
+    $("channel").value = channel;
+    $("username").value = "@" + username;
+    msg.className = "msg ok"; msg.textContent = "✅ Save ho gaya!";
+    showLink();
+  } catch (e) { pageId = pageId; msg.textContent = errText(e); }
+  $("saveBtn").disabled = false;
+};
+
+$("copyBtn").onclick = async () => {
+  try { await navigator.clipboard.writeText(pageUrl()); $("dMsg").className = "msg ok"; $("dMsg").textContent = "Link copy ho gaya."; }
+  catch { $("dMsg").textContent = "Link ko manually copy karein."; }
+};
+$("openBtn").onclick = () => window.open(pageUrl(), "_blank");
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { pageId = null; photoData = ""; show("loginView"); return; }
+  show("dashView");
+  try {
+    const u = await getDoc(doc(db, "users", user.uid));
+    if (u.exists()) {
+      pageId = u.data().pageId;
+      const p = await getDoc(doc(db, "pages", pageId));
+      if (p.exists()) {
+        const d = p.data();
+        $("name").value = d.name; $("channel").value = d.channel;
+        $("username").value = "@" + d.username;
+        photoData = d.photo; $("preview").src = d.photo;
+        showLink();
+      }
+    }
+  } catch (e) { $("dMsg").className = "msg err"; $("dMsg").textContent = errText(e); }
+});
+</script>
+</body>
+</html>
