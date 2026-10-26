@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Join Telegram</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html, body{
+    height:100%;
+    width:100%;
+    overflow:hidden;
+  }
+  body{
+    background:#050303;
+    font-family:'Inter',sans-serif;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    position:relative;
+  }
+  #reptileCanvas{
+    position:fixed;
+    top:0;left:0;
+    width:100%;height:100%;
+    z-index:50;
+    pointer-events:none;
+    opacity:0.75;
+    transform:translateZ(0);
+    will-change:transform;
+  }
+
+  /* Wrapper that gets auto-scaled to always fit the viewport, no scrolling ever */
+  #pageWrapper{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    width:300px;
+    transform-origin:center center;
+  }
+
+  .outer-glow, .feedback-section, .site-footer{
+    position:relative;
+    z-index:2;
+  }
+  h1,h2,.logo{font-family:'Space Grotesk',sans-serif;}
+
+  @keyframes pulseGlow{
+    0%,100%{opacity:0.55;transform:scale(1);}
+    50%{opacity:0.95;transform:scale(1.05);}
+  }
+  @keyframes ctaGlowPulse{
+    0%,100%{box-shadow:0 0 22px rgba(255,31,61,0.55), 0 8px 22px rgba(0,0,0,0.4);}
+    50%{box-shadow:0 0 40px rgba(255,31,61,0.9), 0 8px 28px rgba(0,0,0,0.5);}
+  }
+
+  .outer-glow{
+    position:relative;
+    width:100%;
+    max-width:300px;
+    border-radius:20px;
+    padding:2px;
+  }
+  .outer-glow::before{
+    content:'';
+    position:absolute;inset:-14px;
+    background:radial-gradient(ellipse at center, rgba(255,31,61,0.35), transparent 70%);
+    z-index:0;
+    filter:blur(8px);
+  }
+
+  .card{
+    position:relative;z-index:1;
+    background:#0d0808;
+    border:1px solid rgba(255,31,61,0.25);
+    border-radius:18px;
+    padding:14px 14px 12px;
+    text-align:center;
+  }
+
+  .avatar-wrap{
+    width:58px;height:58px;
+    margin:0 auto 8px;
+    border-radius:50%;
+    position:relative;
+  }
+  .avatar-glow{
+    position:absolute;inset:-8px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,31,61,0.55), transparent 70%);
+    animation:pulseGlow 2.6s ease-in-out infinite;
+  }
+  .avatar-ring{
+    position:absolute;inset:0;
+    border-radius:50%;
+    border:2px solid #ff1f3d;
+    box-shadow:0 0 18px rgba(255,31,61,0.7), inset 0 0 10px rgba(255,31,61,0.4);
+    z-index:3;
+  }
+  .avatar-wrap img{
+    position:relative;z-index:2;
+    width:100%;height:100%;
+    object-fit:cover;
+    border-radius:50%;
+    background:#1a1010;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-user-drag:none;
+    user-drag:none;
+    -webkit-touch-callout:none;
+    pointer-events:none;
+  }
+
+  /* ---------- Spinning glow ring + shine sweep on avatar ---------- */
+  .avatar-spin-ring{
+    position:absolute;
+    inset:-5px;
+    border-radius:50%;
+    z-index:3;
+    background:conic-gradient(from 0deg, #ff1f3d, #ff9a3d, #ff1f3d, #ff1f3d);
+    animation:ringSpin 4s linear infinite;
+    -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    filter:drop-shadow(0 0 6px rgba(255,31,61,0.8));
+  }
+  @keyframes ringSpin{
+    to{transform:rotate(360deg);}
+  }
+  .avatar-shine{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    z-index:5;
+    overflow:hidden;
+    pointer-events:none;
+  }
+  .avatar-shine::before{
+    content:'';
+    position:absolute;
+    top:-50%;left:-50%;
+    width:200%;height:200%;
+    background:linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.55) 50%, transparent 60%);
+    animation:shineSweep 3.2s ease-in-out infinite;
+  }
+  @keyframes shineSweep{
+    0%{transform:translateX(-60%) translateY(-60%);}
+    100%{transform:translateX(60%) translateY(60%);}
+  }
+
+  .logo{
+    font-size:1rem;font-weight:800;letter-spacing:0.5px;
+    display:flex;align-items:center;justify-content:center;gap:5px;
+    margin-bottom:4px;
+  }
+  .logo .red{color:#ff1f3d;}
+
+  .headline{
+    font-size:0.74rem;font-weight:700;
+    color:#ff3b52;
+    line-height:1.25;
+    margin-bottom:6px;
+  }
+
+  .desc{
+    font-size:0.64rem;color:#c9b9b9;line-height:1.3;
+    margin-bottom:10px;
+  }
+
+  /* ---------- Join Telegram button: layered glow + shine sweep ---------- */
+  .cta-wrap{
+    position:relative;
+    width:100%;
+    margin-bottom:6px;
+  }
+  .cta-wrap::before{
+    content:'';
+    position:absolute;
+    inset:-10px;
+    border-radius:16px;
+    background:radial-gradient(ellipse at center, rgba(255,45,71,0.55), transparent 72%);
+    filter:blur(10px);
+    z-index:0;
+    animation:ctaHaloPulse 2.2s ease-in-out infinite;
+  }
+  @keyframes ctaHaloPulse{
+    0%,100%{opacity:0.55;transform:scale(1);}
+    50%{opacity:1;transform:scale(1.12);}
+  }
+  .cta-btn{
+    position:relative;
+    z-index:1;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    width:100%;
+    background:linear-gradient(135deg,#ff2d47,#c2091f);
+    color:#fff;font-weight:700;font-size:0.76rem;
+    padding:9px 14px;border-radius:10px;
+    text-decoration:none;
+    border:1px solid rgba(255,255,255,0.25);
+    cursor:pointer;
+    animation:ctaGlowPulse 2.2s ease-in-out infinite;
+    transition:transform 0.25s ease;
+  }
+  .cta-btn:hover{transform:translateY(-2px) scale(1.02);}
+  .cta-btn svg{width:14px;height:14px;flex-shrink:0;}
+
+  .owner-link{
+    display:flex;align-items:center;justify-content:center;gap:5px;
+    width:100%;
+    font-size:0.64rem;font-weight:600;color:#f5eeee;text-decoration:none;
+    background:rgba(255,31,61,0.08);
+    border:1px solid rgba(255,31,61,0.4);
+    border-radius:9px;
+    padding:7px 12px;
+    margin-bottom:10px;
+    transition:background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  }
+  .owner-link svg{width:12px;height:12px;flex-shrink:0;color:#ff5470;}
+  .owner-link:hover{background:rgba(255,31,61,0.16);border-color:#ff5470;transform:translateY(-2px);}
+
+  .offer-label{
+    font-size:0.68rem;font-weight:700;color:#ff9a3d;
+    display:flex;align-items:center;justify-content:center;gap:5px;
+    margin-bottom:6px;
+  }
+
+  .timer-row{
+    display:flex;gap:6px;justify-content:center;margin-bottom:5px;
+  }
+  .timer-box{
+    flex:1;max-width:54px;
+    border:1px solid #ff1f3d;
+    border-radius:8px;
+    padding:6px 5px;
+    background:rgba(255,31,61,0.05);
+  }
+  .timer-box .num{
+    font-size:1rem;font-weight:800;color:#ff3b52;
+    font-family:'Space Grotesk',sans-serif;
+    line-height:1;
+  }
+  .timer-box .lbl{
+    font-size:0.5rem;color:#a89494;
+    text-transform:uppercase;letter-spacing:0.5px;
+    margin-top:3px;
+  }
+  .timer-ended{
+    font-size:0.64rem;color:#ff5470;
+    font-weight:600;
+    margin-bottom:8px;
+    display:none;
+  }
+
+  .divider{
+    height:1px;background:rgba(255,255,255,0.08);
+    margin:8px 0 10px;
+  }
+
+  .verified{
+    font-size:0.6rem;color:#c9b9b9;
+    display:flex;align-items:center;justify-content:center;gap:5px;
+  }
+  .verified .check{color:#ff1f3d;font-weight:700;}
+
+  .feedback-section{
+    width:100%;max-width:300px;
+    margin-top:14px;
+  }
+  .feedback-head{
+    text-align:center;margin-bottom:8px;
+  }
+  .feedback-head h2{
+    font-size:0.9rem;font-weight:700;color:#fff;
+  }
+  .feedback-head p{
+    font-size:0.68rem;color:#a89494;margin-top:2px;
+  }
+  .feedback-viewport{
+    perspective:700px;
+    padding:34px 0 36px;
+    overflow:hidden;
+  }
+  .feedback-track{
+    position:relative;
+    width:130px;
+    height:90px;
+    margin:0 auto;
+    transform-style:preserve-3d;
+  }
+
+  .feedback-item{
+    position:absolute;
+    top:0;left:0;
+    width:130px;height:90px;
+    border-radius:12px;
+    border:1px solid rgba(255,31,61,0.3);
+    overflow:hidden;
+    background:#130a0a;
+    box-shadow:0 4px 12px rgba(0,0,0,0.5);
+    backface-visibility:hidden;
+    /* Fixed-geometry coverflow: every card animates smoothly to its new
+       slot via this transition, independent of how many photos there are. */
+    transition:transform 0.7s cubic-bezier(.22,.61,.36,1), opacity 0.7s ease;
+    will-change:transform,opacity;
+  }
+  .feedback-item img{
+    width:100%;height:100%;object-fit:cover;display:block;
+    filter:brightness(0.85);
+    /* Block long-press save / drag-out / selection on the feedback photos */
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-user-drag:none;
+    user-drag:none;
+    -webkit-touch-callout:none;
+    pointer-events:none;
+  }
+
+  .site-footer{
+    margin-top:10px;text-align:center;
+    font-size:0.62rem;color:#6b5c5c;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="reptileCanvas"></canvas>
+
+<div id="pageWrapper" style="visibility:hidden">
+
+  <div class="outer-glow">
+    <div class="card">
+
+      <div class="avatar-wrap">
+        <div class="avatar-glow"></div>
+        <div class="avatar-spin-ring"></div>
+        <div class="avatar-ring"></div>
+        <img id="avatarImg" src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
+             alt=""
+             draggable="false"
+             oncontextmenu="return false"
+             ondragstart="return false"
+             onerror="this.src='https://placehold.co/300x300/1a1010/ff3b52?text=Top+Ten'">
+        <div class="avatar-shine"></div>
+      </div>
+
+      <div class="logo">
+         <span class="red" id="nameEl"></span> 🎯
+      </div>
+
+      <div class="headline">
+        𝘽𝙂𝙈𝙄 &amp; 𝙋𝙐𝘽𝙂 ke sabse dangerous hacks & mods ab available — esp, aimbot, wall hack, magic bullet, bt & ets... 🔥
+      </div>
+
+      <div class="desc">
+        Join Karo Mera Telegram Channel Mai — Daily Keys, Verified Mods Aur Direct Support Ke Saath.
+      </div>
+
+      <div class="cta-wrap">
+        <a id="joinLink" href="#" target="_blank" rel="noopener" class="cta-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.15-3.06-2 1.93c-.23.23-.42.42-.81.42z"/></svg>
+          <span>Join Telegram Now</span>
+        </a>
+      </div>
+
+      <a id="ownerLink" href="#" target="_blank" rel="noopener" class="owner-link">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.15-3.06-2 1.93c-.23.23-.42.42-.81.42z"/></svg>
+        Message the Owner Directly
+      </a>
+
+      <div class="offer-label">⚡ Limited Stock – Jaldi Join Karo!⚡</div>
+
+      <div class="timer-row" id="timerRow">
+        <div class="timer-box">
+          <div class="num" id="hours">00</div>
+          <div class="lbl">Hours</div>
+        </div>
+        <div class="timer-box">
+          <div class="num" id="minutes">09</div>
+          <div class="lbl">Minutes</div>
+        </div>
+        <div class="timer-box">
+          <div class="num" id="seconds">43</div>
+          <div class="lbl">Seconds</div>
+        </div>
+      </div>
+      <div class="timer-ended" id="timerEnded">Drop time ended</div>
+
+      <div class="divider"></div>
+
+      <div class="verified">
+        <span class="check">✔</span> Verified Mods Community
+      </div>
+
+    </div>
+  </div>
+
+  <div class="feedback-section">
+    <div class="feedback-head">
+      <h2>Hack Feedback</h2>
+      <p>Members ke screenshots</p>
+    </div>
+    <div class="feedback-viewport">
+      <div class="feedback-track" id="feedbackTrack"></div>
+    </div>
+  </div>
+
+  <div class="site-footer">Copyright by : Battlegrounds Mobile India </div>
+
+</div>
+
+<script>
+  // ---- Honest countdown: 00:09:43, real-time, stops at zero, no auto action ----
+  let totalSeconds = 0*3600 + 9*60 + 43;
+  const hEl = document.getElementById('hours');
+  const mEl = document.getElementById('minutes');
+  const sEl = document.getElementById('seconds');
+  const endedEl = document.getElementById('timerEnded');
+  const rowEl = document.getElementById('timerRow');
+
+  function renderTimer(){
+    const h = Math.floor(totalSeconds/3600);
+    const m = Math.floor((totalSeconds%3600)/60);
+    const s = totalSeconds%60;
+    hEl.textContent = String(h).padStart(2,'0');
+    mEl.textContent = String(m).padStart(2,'0');
+    sEl.textContent = String(s).padStart(2,'0');
+  }
+  renderTimer();
+
+  const timerInterval = setInterval(() => {
+    if (totalSeconds <= 0){
+      clearInterval(timerInterval);
+      rowEl.style.display = 'none';
+      endedEl.style.display = 'block';
+      return; // stops here — no click, no redirect, nothing auto-triggered
+    }
+    totalSeconds--;
+    renderTimer();
+  }, 1000);
+
+  // ---- Feedback photos ----
+  const track = document.getElementById('feedbackTrack');
+  const feedbackUrls = [
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/1.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/2.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/3.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/4.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/5.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/6.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/7.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/8.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/9.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/10.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/11.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/12.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/13.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/14.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/15.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/16.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/17.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/18.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/19.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/20.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/21.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/22.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/23.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/24.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/25.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/26.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/27.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/28.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/29.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/30.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/31.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/32.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/33.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/34.jpg',
+  'https://raw.githubusercontent.com/TopTen-Admin/TopTen/refs/heads/main/35.jpg'
+];
+  // ---- True coverflow: fixed tilt/depth PER SLOT (relative to center),
+  // completely independent of how many total photos exist. Whether there
+  // are 10 photos or 350, the center card is always flat & big, and each
+  // neighbour steps back at the same fixed angle — so the 3D trapezoid
+  // look never flattens out.
+  const N = feedbackUrls.length;
+  const VISIBLE_SIDE = 3;   // cards rendered on each side of center
+  const OFFSET_X   = 92;    // px horizontal step per slot
+  const Z_STEP     = 100;   // px pushed back into the screen per slot
+  const TILT_DEG   = 50;    // fixed rotateY per slot (never divided by N)
+  const SCALE_STEP = 0.16;  // size shrink per slot
+
+  // Create one persistent DOM element per photo so CSS transitions can
+  // smoothly animate each one to its new slot every tick (recreating
+  // elements every tick, like before, skipped the transition entirely).
+  const itemEls = feedbackUrls.map((url) => {
+    const item = document.createElement('div');
+    item.className = 'feedback-item';
+    item.addEventListener('contextmenu', (e) => e.preventDefault());
+    item.addEventListener('dragstart', (e) => e.preventDefault());
+    const img = document.createElement('img');
+    img.src = url;
+    img.loading = 'lazy';
+    img.draggable = false;
+    img.oncontextmenu = () => false;
+    img.addEventListener('dragstart', (e) => e.preventDefault());
+    item.appendChild(img);
+    track.appendChild(item);
+    return item;
+  });
+
+  let centerIndex = 0;
+
+  function layoutCoverflow(){
+    itemEls.forEach((item, idx) => {
+      // Shortest signed distance from this item to the current center,
+      // wrapping around the ends of the array.
+      let offset = idx - centerIndex;
+      offset = ((offset % N) + N) % N;
+      if (offset > N / 2) offset -= N;
+      const abs = Math.abs(offset);
+
+      if (abs > VISIBLE_SIDE){
+        item.style.opacity = '0';
+        item.style.pointerEvents = 'none';
+        item.style.zIndex = '0';
+        item.style.transform =
+          `translateX(${Math.sign(offset) * (VISIBLE_SIDE + 1) * OFFSET_X}px) translateZ(-400px) scale(0.3)`;
+        return;
+      }
+
+      const scale = abs === 0 ? 1.6 : Math.max(1 - abs * SCALE_STEP, 0.42);
+      const rotate = offset === 0 ? 0 : (offset > 0 ? -TILT_DEG : TILT_DEG);
+      const tx = offset * OFFSET_X;
+      const tz = -abs * Z_STEP;
+
+      item.style.opacity = String(Math.max(1 - abs * 0.18, 0.3));
+      item.style.zIndex = String(100 - abs);
+      item.style.pointerEvents = 'auto';
+      item.style.transform =
+        `translateX(${tx}px) translateZ(${tz}px) rotateY(${rotate}deg) scale(${scale})`;
+    });
+  }
+
+  layoutCoverflow();
+
+  let coverflowTimer = setInterval(() => {
+    centerIndex = (centerIndex + 1) % N;
+    layoutCoverflow();
+  }, 2200);
+
+  // Pause auto-advance while the user is touching/hovering the carousel.
+  const viewportEl = document.querySelector('.feedback-viewport');
+  if (viewportEl){
+    const pause = () => clearInterval(coverflowTimer);
+    const resume = () => {
+      clearInterval(coverflowTimer);
+      coverflowTimer = setInterval(() => {
+        centerIndex = (centerIndex + 1) % N;
+        layoutCoverflow();
+      }, 2200);
+    };
+    viewportEl.addEventListener('mouseenter', pause);
+    viewportEl.addEventListener('mouseleave', resume);
+    viewportEl.addEventListener('touchstart', pause, { passive:true });
+    viewportEl.addEventListener('touchend', resume, { passive:true });
+  }
+
+  // ---- Auto-fit the whole page into the viewport so there is never any scrolling ----
+  (function(){
+    const wrapper = document.getElementById('pageWrapper');
+    function fitToScreen(){
+      wrapper.style.transform = 'none';
+      const rect = wrapper.getBoundingClientRect();
+      const natW = rect.width;
+      const natH = rect.height;
+      const scaleX = window.innerWidth / natW;
+      const scaleY = window.innerHeight / natH;
+      const scale = Math.min(scaleX, scaleY) * 0.97; // small safety margin
+      wrapper.style.transform = `scale(${scale})`;
+    }
+    window.addEventListener('resize', fitToScreen);
+    window.addEventListener('orientationchange', fitToScreen);
+    window.addEventListener('load', fitToScreen);
+    fitToScreen();
+    setTimeout(fitToScreen, 300); // re-check after fonts/images settle
+  })();
+
+  // ---- Reptile skeleton cursor/touch-follow animation (mobile-friendly) ----
+  (function(){
+    const canvas = document.getElementById('reptileCanvas');
+    const ctx = canvas.getContext('2d');
+    let w, h;
+    function resize(){
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const SEG_COUNT = 22;
+    const SEG_LEN = 20;
+    const spine = [];
+    for (let i = 0; i < SEG_COUNT; i++){
+      spine.push({ x: w + 80 - i*1.2, y: h + 80 - i*1.2 });
+    }
+
+    const legIndices = [3, 8, 13, 18];
+    const legs = legIndices.map(() => ({
+      lx: 0, ly: 0, rx: 0, ry: 0,
+      lTargetX: 0, lTargetY: 0, rTargetX: 0, rTargetY: 0
+    }));
+    legs.forEach((leg, li) => {
+      leg.lx = leg.rx = w + 80;
+      leg.ly = leg.ry = h + 80;
+    });
+
+    const cardEl = document.querySelector('.card');
+    let target = { x: w/2, y: h/2 };
+    let idleDist = 0;
+    let hasPointer = false;
+    let pointerTimeout;
+
+    function pointOnRectPerimeter(rect, dist){
+      let d = dist;
+      if (d <= rect.width){
+        return { x: rect.left + d, y: rect.top };
+      }
+      d -= rect.width;
+      if (d <= rect.height){
+        return { x: rect.left + rect.width, y: rect.top + d };
+      }
+      d -= rect.height;
+      if (d <= rect.width){
+        return { x: rect.left + rect.width - d, y: rect.top + rect.height };
+      }
+      d -= rect.width;
+      return { x: rect.left, y: rect.top + rect.height - d };
+    }
+
+    function nearestPerimeterDist(rect, px, py){
+      const candidates = [];
+      let cx = Math.min(Math.max(px, rect.left), rect.left + rect.width);
+      candidates.push({ d: Math.hypot(px - cx, py - rect.top), dist: cx - rect.left });
+      let cy = Math.min(Math.max(py, rect.top), rect.top + rect.height);
+      candidates.push({ d: Math.hypot(px - (rect.left + rect.width), py - cy), dist: rect.width + (cy - rect.top) });
+      cx = Math.min(Math.max(px, rect.left), rect.left + rect.width);
+      candidates.push({ d: Math.hypot(px - cx, py - (rect.top + rect.height)), dist: rect.width + rect.height + (rect.left + rect.width - cx) });
+      cy = Math.min(Math.max(py, rect.top), rect.top + rect.height);
+      candidates.push({ d: Math.hypot(px - rect.left, py - cy), dist: 2 * rect.width + rect.height + (rect.top + rect.height - cy) });
+      candidates.sort((a, b) => a.d - b.d);
+      return candidates[0].dist;
+    }
+
+    let idleDirection = 1;
+
+    function clockwiseTangent(rect, dist){
+      let d = dist;
+      if (d <= rect.width) return { x: 1, y: 0 };
+      d -= rect.width;
+      if (d <= rect.height) return { x: 0, y: 1 };
+      d -= rect.height;
+      if (d <= rect.width) return { x: -1, y: 0 };
+      return { x: 0, y: -1 };
+    }
+
+    function releasePointer(){
+      hasPointer = false;
+      clearTimeout(pointerTimeout);
+      if (cardEl){
+        const rect = cardEl.getBoundingClientRect();
+        idleDist = nearestPerimeterDist(rect, spine[0].x, spine[0].y);
+        const cw = clockwiseTangent(rect, idleDist);
+        const faceX = Math.cos(headAngle);
+        const faceY = Math.sin(headAngle);
+        const alignment = faceX * cw.x + faceY * cw.y;
+        idleDirection = alignment >= 0 ? 1 : -1;
+      }
+    }
+
+    function setTarget(x, y){
+      target.x = x;
+      target.y = y;
+      hasPointer = true;
+      clearTimeout(pointerTimeout);
+      pointerTimeout = setTimeout(releasePointer, 2500);
+    }
+
+    window.addEventListener('touchmove', (e) => {
+      const t = e.touches[0];
+      if (t) setTarget(t.clientX, t.clientY);
+    }, { passive:true });
+    window.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      if (t) setTarget(t.clientX, t.clientY);
+    }, { passive:true });
+    window.addEventListener('touchend', releasePointer, { passive:true });
+    window.addEventListener('touchcancel', releasePointer, { passive:true });
+    window.addEventListener('mousemove', (e) => setTarget(e.clientX, e.clientY));
+    window.addEventListener('mouseleave', releasePointer);
+
+    function updateIdleTarget(){
+      if (!cardEl) return;
+      const rect = cardEl.getBoundingClientRect();
+      const perimeter = 2 * (rect.width + rect.height);
+      if (perimeter <= 0) return;
+      idleDist = ((idleDist + 2.4 * idleDirection) % perimeter + perimeter) % perimeter;
+      const p = pointOnRectPerimeter(rect, idleDist);
+      target.x = p.x;
+      target.y = p.y;
+    }
+
+    const startTime = performance.now();
+    const introDuration = 4000;
+
+    let headAngle = Math.atan2(h/2 - spine[0].y, w/2 - spine[0].x);
+    const idleTurnRate = 0.05;
+    const pointerTurnRate = 0.35;
+    if (cardEl){
+      const rect0 = cardEl.getBoundingClientRect();
+      idleDist = nearestPerimeterDist(rect0, spine[0].x, spine[0].y);
+      const p0 = pointOnRectPerimeter(rect0, idleDist);
+      headAngle = Math.atan2(p0.y - spine[0].y, p0.x - spine[0].x);
+      const cw0 = clockwiseTangent(rect0, idleDist);
+      const align0 = Math.cos(headAngle) * cw0.x + Math.sin(headAngle) * cw0.y;
+      idleDirection = align0 >= 0 ? 1 : -1;
+    }
+
+    const trail = [{ x: spine[0].x, y: spine[0].y }];
+    const TRAIL_MAX_NEEDED = SEG_COUNT * SEG_LEN + 60;
+
+    function pointAtDistanceBehindHead(d){
+      let remaining = d;
+      for (let i = trail.length - 1; i > 0; i--){
+        const a = trail[i];
+        const b = trail[i - 1];
+        const segDist = Math.hypot(a.x - b.x, a.y - b.y);
+        if (remaining <= segDist){
+          const t = segDist === 0 ? 0 : remaining / segDist;
+          return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+        }
+        remaining -= segDist;
+      }
+      return { x: trail[0].x, y: trail[0].y };
+    }
+
+    function updateSpine(){
+      if (!hasPointer) updateIdleTarget();
+
+      const elapsed = performance.now() - startTime;
+      const introFactor = Math.min(elapsed / introDuration, 1);
+      const speedFactor = 0.12 + 0.88 * introFactor;
+
+      const head = spine[0];
+      const dx = target.x - head.x;
+      const dy = target.y - head.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const desiredAngle = Math.atan2(dy, dx);
+      let diff = desiredAngle - headAngle;
+      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+      const turnRate = hasPointer ? pointerTurnRate : idleTurnRate;
+      const turn = Math.max(-turnRate, Math.min(turnRate, diff));
+      headAngle += turn;
+
+      const speedCap = hasPointer ? 15 : 6;
+      const speedGain = hasPointer ? 0.22 : 0.08;
+      const speed = Math.min(dist * speedGain, speedCap) * speedFactor;
+      head.x += Math.cos(headAngle) * speed;
+      head.y += Math.sin(headAngle) * speed;
+
+      trail.push({ x: head.x, y: head.y });
+      let coveredNeeded = 0;
+      let trimIndex = trail.length - 1;
+      for (let i = trail.length - 1; i > 0; i--){
+        coveredNeeded += Math.hypot(trail[i].x - trail[i-1].x, trail[i].y - trail[i-1].y);
+        trimIndex = i - 1;
+        if (coveredNeeded >= TRAIL_MAX_NEEDED) break;
+      }
+      if (trimIndex > 0) trail.splice(0, trimIndex);
+
+      for (let i = 1; i < spine.length; i++){
+        const p = pointAtDistanceBehindHead(i * SEG_LEN);
+        spine[i].x = p.x;
+        spine[i].y = p.y;
+      }
+
+      legIndices.forEach((idx, li) => {
+        const seg = spine[idx];
+        const next = spine[Math.min(idx+1, spine.length-1)];
+        const ang = Math.atan2(seg.y - next.y, seg.x - next.x);
+        const perp = ang + Math.PI/2;
+        const legReach = 50;
+        const leg = legs[li];
+        leg.lTargetX = seg.x + Math.cos(perp) * legReach;
+        leg.lTargetY = seg.y + Math.sin(perp) * legReach;
+        leg.rTargetX = seg.x - Math.cos(perp) * legReach;
+        leg.rTargetY = seg.y - Math.sin(perp) * legReach;
+
+        leg.lx += (leg.lTargetX - leg.lx) * 0.15 * speedFactor;
+        leg.ly += (leg.lTargetY - leg.ly) * 0.15 * speedFactor;
+        leg.rx += (leg.rTargetX - leg.rx) * 0.15 * speedFactor;
+        leg.ry += (leg.rTargetY - leg.ry) * 0.15 * speedFactor;
+      });
+    }
+
+    function drawSpine(){
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+      ctx.lineWidth = 1.6;
+
+      for (let i = 0; i < spine.length - 1; i++){
+        const a = spine[i], b = spine[i+1];
+        const ang = Math.atan2(b.y - a.y, b.x - a.x) + Math.PI/2;
+        const ribLen = 9 + (i < spine.length*0.6 ? (spine.length*0.6 - i)*0.45 : 0);
+        ctx.beginPath();
+        ctx.moveTo(a.x + Math.cos(ang)*ribLen, a.y + Math.sin(ang)*ribLen);
+        ctx.lineTo(a.x - Math.cos(ang)*ribLen, a.y - Math.sin(ang)*ribLen);
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(spine[0].x, spine[0].y);
+      for (let i = 1; i < spine.length; i++) ctx.lineTo(spine[i].x, spine[i].y);
+      ctx.stroke();
+
+      legIndices.forEach((idx, li) => {
+        const seg = spine[idx];
+        const leg = legs[li];
+        [[leg.lx, leg.ly], [leg.rx, leg.ry]].forEach(([fx, fy]) => {
+          const midX = (seg.x + fx) / 2 + (fy - seg.y) * 0.15;
+          const midY = (seg.y + fy) / 2 - (fx - seg.x) * 0.15;
+          ctx.beginPath();
+          ctx.moveTo(seg.x, seg.y);
+          ctx.lineTo(midX, midY);
+          ctx.lineTo(fx, fy);
+          ctx.stroke();
+        });
+      });
+
+      ctx.beginPath();
+      ctx.arc(spine[0].x, spine[0].y, 4.5, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fill();
+    }
+
+    function loop(){
+      updateSpine();
+      drawSpine();
+      requestAnimationFrame(loop);
+    }
+    loop();
+  })();
+</script>
+
+
+<script type="module">
+import { db } from "./firebase-config.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const wrap = document.getElementById("pageWrapper");
+const id = new URLSearchParams(location.search).get("id");
+
+function fail(){
+  wrap.style.visibility = "visible";
+  wrap.innerHTML = '<div style="color:#c9b9b9;font-size:.9rem;text-align:center">Page nahi mila.</div>';
+}
+
+(async () => {
+  try {
+    if (!id) throw new Error("no id");
+    const snap = await getDoc(doc(db, "pages", id));
+    if (!snap.exists()) throw new Error("not found");
+    const d = snap.data();
+
+    const okLink = /^https:\/\/(t\.me|telegram\.me)\//i.test(d.channel);
+    const okUser = /^[A-Za-z0-9_]{3,32}$/.test(d.username);
+    const okImg  = typeof d.photo === "string" && d.photo.startsWith("data:image/");
+    if (!okLink || !okUser || !okImg) throw new Error("bad data");
+
+    document.title = d.name + " — Join Telegram";
+    document.getElementById("nameEl").textContent = d.name;
+    document.getElementById("avatarImg").src = d.photo;
+    document.getElementById("joinLink").href = d.channel;
+    document.getElementById("ownerLink").href =
+      "https://t.me/" + d.username + "?text=Hello%20TopTen%20Bro";
+    wrap.style.visibility = "visible";
+  } catch (e) { fail(); }
+})();
+</script>
+</body>
+</html>
